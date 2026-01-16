@@ -1,39 +1,60 @@
 import { useEffect, useState } from 'react';
-import { supabase } from './supabaseClient';
-import type { Session, User } from '@supabase/supabase-js';
+import { useRouter } from 'next/router';
+
+interface User {
+  userId: string;
+  email: string;
+  name: string;
+  role: string;
+}
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    let mounted = true;
-    async function load() {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
-      setSession(data.session);
-      setUser(data.session?.user ?? null);
-      setLoading(false);
+    // Récupérer le token depuis localStorage
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      try {
+        // Décoder le JWT (simple, sans vérification - la vérification est côté serveur)
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        
+        // Vérifier si le token est expiré
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          // Token expiré, le supprimer
+          localStorage.removeItem('auth_token');
+        } else {
+          setUser(payload);
+        }
+      } catch (e) {
+        localStorage.removeItem('auth_token');
+      }
     }
-    load();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-    });
-
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
+    setLoading(false);
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+  const signIn = async (email: string, password: string) => {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      localStorage.setItem('auth_token', data.token);
+      setUser(data.user);
+      return { success: true, user: data.user };
+    }
+    return { success: false, error: data.error };
   };
 
-  return { user, session, loading, signOut };
+  const signOut = () => {
+    localStorage.removeItem('auth_token');
+    setUser(null);
+    router.push('/login');
+  };
+
+  return { user, loading, signIn, signOut };
 }
