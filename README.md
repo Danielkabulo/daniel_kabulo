@@ -11,6 +11,15 @@ Application Next.js intégrant Supabase pour l'authentification, la base de donn
 - ✅ Client/Server Supabase separation
 - ✅ Docker support
 - ✅ CI/CD avec GitHub Actions
+- ✅ **Next.js 14.2.35** (version sécurisée, corrige les vulnérabilités CVE)
+
+## 🔒 Sécurité
+
+**Version Next.js mise à jour :** Ce projet utilise Next.js 14.2.35, qui corrige les vulnérabilités de sécurité critiques présentes dans les versions antérieures :
+- ✅ Denial of Service (DoS) avec Server Components
+- ✅ Authorization Bypass dans Middleware
+- ✅ Server-Side Request Forgery (SSRF)
+- ✅ HTTP Request Smuggling
 
 ## 🚀 Configuration & Déploiement
 
