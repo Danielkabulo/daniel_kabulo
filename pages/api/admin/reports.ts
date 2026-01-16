@@ -1,0 +1,46 @@
+import type { NextApiRequest, NextApiResponse } from 'next';
+import { supabaseAdmin } from '../../../lib/supabaseServer';
+import { timingSafeEqual } from 'crypto';
+
+// GET: list all reports (admin server-side endpoint)
+// Protected by x-admin-key header
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Vérification de l'en-tête d'administration
+  const adminKey = req.headers['x-admin-key'];
+  const expectedAdminKey = process.env.ADMIN_API_KEY;
+
+  if (!expectedAdminKey) {
+    return res.status(500).json({ error: 'ADMIN_API_KEY not configured on server' });
+  }
+
+  if (!adminKey || typeof adminKey !== 'string') {
+    return res.status(401).json({ error: 'Unauthorized: invalid or missing x-admin-key header' });
+  }
+
+  // Utiliser une comparaison à temps constant pour éviter les attaques de timing
+  try {
+    const adminKeyBuffer = Buffer.from(adminKey);
+    const expectedKeyBuffer = Buffer.from(expectedAdminKey);
+    
+    // Les buffers doivent avoir la même longueur pour timingSafeEqual
+    if (adminKeyBuffer.length !== expectedKeyBuffer.length) {
+      return res.status(401).json({ error: 'Unauthorized: invalid or missing x-admin-key header' });
+    }
+    
+    if (!timingSafeEqual(adminKeyBuffer, expectedKeyBuffer)) {
+      return res.status(401).json({ error: 'Unauthorized: invalid or missing x-admin-key header' });
+    }
+  } catch (err) {
+    return res.status(401).json({ error: 'Unauthorized: invalid or missing x-admin-key header' });
+  }
+
+  try {
+    const { data, error } = await supabaseAdmin.from('reports').select('*').order('created_at', { ascending: false }).limit(1000);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(200).json({ data });
+  } catch (err: any) {
+    return res.status(500).json({ error: String(err) });
+  }
+}
