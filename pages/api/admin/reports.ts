@@ -2,8 +2,21 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabaseAdmin } from '../../../lib/supabaseServer';
 
 // GET: list all reports (admin server-side endpoint)
+// Protected by x-admin-key header
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Vérification de l'en-tête d'administration
+  const adminKey = req.headers['x-admin-key'];
+  const expectedAdminKey = process.env.ADMIN_API_KEY;
+
+  if (!expectedAdminKey) {
+    return res.status(500).json({ error: 'ADMIN_API_KEY not configured on server' });
+  }
+
+  if (!adminKey || adminKey !== expectedAdminKey) {
+    return res.status(401).json({ error: 'Unauthorized: invalid or missing x-admin-key header' });
+  }
 
   try {
     const { data, error } = await supabaseAdmin.from('reports').select('*').order('created_at', { ascending: false }).limit(1000);
