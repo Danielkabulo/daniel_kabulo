@@ -25,6 +25,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Créer le compte admin initial
+    // NOTE: Password is hard-coded as per requirements for initial admin account.
+    // This endpoint should be called once during initial setup, then the admin
+    // can change their password through a password change endpoint (to be implemented).
     const password = 'Johnnyka@4569801';
     const passwordHash = await bcrypt.hash(password, 10);
 

@@ -20,7 +20,14 @@ export function useAuth() {
       try {
         // Décoder le JWT (simple, sans vérification - la vérification est côté serveur)
         const payload = JSON.parse(atob(token.split('.')[1]));
-        setUser(payload);
+        
+        // Vérifier si le token est expiré
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          // Token expiré, le supprimer
+          localStorage.removeItem('auth_token');
+        } else {
+          setUser(payload);
+        }
       } catch (e) {
         localStorage.removeItem('auth_token');
       }

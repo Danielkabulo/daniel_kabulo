@@ -13,15 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- Index sur email pour performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
--- RLS policies
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-
--- Policy : seuls les admins peuvent voir tous les users
-CREATE POLICY admin_read_users ON users
-  FOR SELECT
-  USING (auth.role() = 'admin');
-
--- Policy : seuls les admins peuvent créer des users
-CREATE POLICY admin_create_users ON users
-  FOR INSERT
-  WITH CHECK (auth.role() = 'admin');
+-- Note: RLS is not enabled for this table because:
+-- 1. Server-side API endpoints use service role key with full access
+-- 2. JWT authentication is handled at the API level, not database level
+-- 3. All access control is enforced through API middleware checking JWT tokens
